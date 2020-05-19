@@ -1,5 +1,4 @@
 #get!/usr/bin/env python
-import ttnkey
 import subprocess
 import time, json
 import smbus
@@ -11,18 +10,26 @@ import psutil
 # MQTT
 #import subprocess
 
+#config
+OLED = False
+LORA = False
+Z2G = False
+GPS = False
+
+if LORA:
+    import ttnkey
+
 # SDS011
 from sds011 import SDS011
 import aqi
 
 # zerotogo board
-z2g = True
-i2c_ch = 1
-bus = smbus.SMBus(i2c_ch)
-addr_z2g = 0x24
+if Z2G:
+    i2c_ch = 1
+    bus = smbus.SMBus(i2c_ch)
+    addr_z2g = 0x24
 
 # OLED LCD
-OLED = True
 if OLED:
     import adafruit_ssd1306
 
@@ -51,10 +58,10 @@ if OLED:
 
 # GPS
 import pynmea2, serial
-GPS = True   # Active or Not GPS
-gps_power = DigitalInOut(board.D12)
-gps_power.direction = Direction.OUTPUT
-gps_power.value = False
+if GPS:
+    gps_power = DigitalInOut(board.D12)
+    gps_power.direction = Direction.OUTPUT
+    gps_power.value = False
 lat=0
 lon=0
 
@@ -68,31 +75,33 @@ MQTT_TOPIC = '/weather/particulatematter'
 
 
 # TinyLora
-from adafruit_tinylora.adafruit_tinylora import TTN, TinyLoRa
+if LORA:
+    from adafruit_tinylora.adafruit_tinylora import TTN, TinyLoRa
 
-# TinyLoRa Configuration
-spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
-cs = DigitalInOut(board.CE1)
-irq = DigitalInOut(board.D5)
-rst = DigitalInOut(board.D25)
+    # TinyLoRa Configuration
+    spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
+    cs = DigitalInOut(board.CE1)
+    irq = DigitalInOut(board.D5)
+    rst = DigitalInOut(board.D25)
 
-# TTN Device Address, 4 Bytes, MSB
-devaddr = bytearray(ttnkey.devaddr)
-# TTN Network Key, 16 Bytes, MSB
-nwkey = bytearray(ttnkey.nwkey)
-# TTN Application Key, 16 Bytess, MSB
-app = bytearray(ttnkey.app)
+    # TTN Device Address, 4 Bytes, MSB
+    devaddr = bytearray(ttnkey.devaddr)
+    # TTN Network Key, 16 Bytes, MSB
+    nwkey = bytearray(ttnkey.nwkey)
+    # TTN Application Key, 16 Bytess, MSB
+    app = bytearray(ttnkey.app)
 
-# Initialize ThingsNetwork configuration
-ttn_config = TTN(devaddr, nwkey, app, country='EU')
-lora = TinyLoRa(spi, cs, irq, rst, ttn_config)
-# 2b array to store sensor data
-data_pkt = bytearray(2)
-# time to delay periodic packet sends (in seconds)
-data_pkt_delay = 5.0
+    # Initialize ThingsNetwork configuration
+    ttn_config = TTN(devaddr, nwkey, app, country='EU')
+    lora = TinyLoRa(spi, cs, irq, rst, ttn_config)
+    # 2b array to store sensor data
+    data_pkt = bytearray(2)
+    # time to delay periodic packet sends (in seconds)
+    data_pkt_delay = 5.0
 
 #sds011
 sensor = SDS011("/dev/ttyUSB0", use_query_mode=True)
+
 
 #print("SDS011 sensor info:")
 #print(sensor)
@@ -181,13 +190,14 @@ def send_pi_data(data):
     time.sleep(0.5)
 
 def send_data(data):
-    print('[INFO] Sending data')
-    data_pkt = bytearray(data, 'utf-8')
-    try:
-        lora.send_data(data_pkt, len(data_pkt),lora.frame_counter)
-        lora.frame_counter += 1
-    except:
-        print("Something went wrong")
+    if LORA:
+        print('[INFO] Sending data')
+        data_pkt = bytearray(data, 'utf-8')
+        try:
+             lora.send_data(data_pkt, len(data_pkt),lora.frame_counter)
+             lora.frame_counter += 1
+        except:
+             print("Something went wrong")
 
     time.sleep(0.5)
 
@@ -240,7 +250,7 @@ def decode(coord):
 
 # that function only works for the  zero2go board
 def get_batt_z2g():
-    if z2g:
+    if Z2G:
         # Channel-A (input 1)
         val1 = bus.read_i2c_block_data(addr_z2g, 1)
         val2 = bus.read_i2c_block_data(addr_z2g, 2)
@@ -347,7 +357,7 @@ while True:
 
 
     # Get batteries level with zero2go board
-    if z2g:
+    if Z2G:
         print('[INFO] get battery levels')
         bat1, bat2, bat3 = get_batt_z2g()
         print('Bat1:', bat1)
@@ -366,7 +376,7 @@ while True:
     print(f"    AQI (PMT2.5): {aqi_2_5}    ", end='')
     print(f"AQI(PMT10): {aqi_10}")
 
-     if GPS:
+    if GPS:
         print('[INFO] Get GPS')
         lat, lon = get_gps()
         print('lat/lon:' + str(lat) + ' ' + str(lon))
@@ -434,7 +444,8 @@ while True:
     # Sent to TTN
     try:
         send_data(payload)
-        print('[INFO] Data sent to TTN')
+        if LORA:
+            print('[INFO] Data sent to TTN')
         #if OLED:
             #display.text('Data sent to TTN!',0 , 55, 1)
     except NameError:
@@ -445,7 +456,8 @@ while True:
         time.sleep(1)
 
     #sl=3600
-    sl=1800
+    #sl=1800
+    sl=120
     print('[INFO] Sleep for ' + str(sl)  + ' sec')
     print(' ')
 
