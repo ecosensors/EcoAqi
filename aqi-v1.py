@@ -17,7 +17,7 @@ Z2G = False
 GPS = False
 
 if LORA:
-    import ttnkey
+    import ttnkeys
 
 # SDS011
 from sds011 import SDS011
@@ -85,11 +85,11 @@ if LORA:
     rst = DigitalInOut(board.D25)
 
     # TTN Device Address, 4 Bytes, MSB
-    devaddr = bytearray(ttnkey.devaddr)
+    devaddr = bytearray(ttnkeys.devaddr)
     # TTN Network Key, 16 Bytes, MSB
-    nwkey = bytearray(ttnkey.nwkey)
+    nwkey = bytearray(ttnkeys.nwkey)
     # TTN Application Key, 16 Bytess, MSB
-    app = bytearray(ttnkey.app)
+    app = bytearray(ttnkeys.app)
 
     # Initialize ThingsNetwork configuration
     ttn_config = TTN(devaddr, nwkey, app, country='EU')
