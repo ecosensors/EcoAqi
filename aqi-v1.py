@@ -21,8 +21,9 @@ CO2 = True
 if CO2:
     import mh_z19
 
-if LORA:
-    import ttnkeys
+dev_id="sds011-12"
+
+import ttnkeys
 
 if C_URL:
     from urllib.parse import urlencode
@@ -263,7 +264,7 @@ def parseGPS(data):
         speed = sdata[7]       #Speed in knots
         trCourse = sdata[8]    #True course
         date = sdata[9][0:2] + "/" + sdata[9][2:4] + "/" + sdata[9][4:6]#date
- 
+
         print("time : %s, latitude : %s(%s), longitude : %s(%s), speed : %s, True Course : %s, Date : %s" %  (time,lat,dirLat,lon,dirLon,speed,trCourse,date))
         return lat,lon,date
 
@@ -441,8 +442,26 @@ while True:
     timestamp_now = datetime.timestamp(tnow)
 
     # Build payload
+    #payload_curl = {"dev_id":"12","p1":"1","p2":"2"}
     #payload_curl = {}
+    #payload_curl["app_id"] = "aqi-sds011"
+    #payload_curl["dev_id"] = "sds011-12"
+    #payload_curl["a"] = int(pmt_2_5 * 100)	# p1 (pm2.5)
+    #payload_curl["b"] = int(pmt_10 * 100)	# p2 (pm10)
+    #payload_curl["c"] = int(aqi_2_5 * 100)	# a1 (aqi2.5)
+    #payload_curl["d"] = int(aqi_10 * 100)	# a2 (aqi10)
+    #payload_curl["e"] = int(lat * 10000)	# la (lat)
+    #payload_curl["f"] = int(lon * 10000)	# lo (lon)
+    #payload_curl["g"] = str(timestamp_now)  	# ti (timestamp)
+    #payload_curl["h"] = int(bat1*100)		# b1 (input 1)
+    #payload_curl["i"] = int(bat2*100)		# b2 (input 2)
+    #payload_curl["j"] = int(bat3*100)		# b3 (inout 2)
+    #payload_curl["k"] = co2			# co (CO2)
+
+    #print(payload_curl)
+
     payload = 'a' + str(int(pmt_2_5 * 100)) + 'b' + str(int(pmt_10 * 100)) + 'c' + str(int(aqi_2_5 * 100)) + 'd' + str(int(aqi_10 * 100)) + 'e' + str(int(lat * 10000)) + 'f' + str(int(lon * 10000)) + 'g' + str(timestamp_now) + 'h' + str(int(bat1 * 100)) + 'i' + str(int(bat2 * 100)) + 'j' + str(int(bat3 * 100)) + 'k' + str(co2)
+
     print('[DEBUG] payload:' + payload)
     print(' ')
 
@@ -476,8 +495,11 @@ while True:
 
     # append new values
     #'aqi25': aqi_2_5, 'aqi10': aqi_10, 'lat': lat, 'lon': lon, 'bat1': bat1, 'bat2': bat2, 'bat3': bat3,
-    jsonrow = {'pm25': pmt_2_5, 'pm10': pmt_10, 'aq25': str(aqi_2_5), 'aq10': str(aqi_10), 'co2': str(co2) ,'lat': lat, 'lon': lon, 'ba1': bat1, 'ba2': bat2, 'ba3': bat3, 'time': timestamp_now}
+    jsonrow = {'dev_id': dev_id,'pm25': pmt_2_5, 'pm10': pmt_10, 'aq25': str(aqi_2_5), 'aq10': str(aqi_10), 'co2': str(co2) ,'lat': lat, 'lon': lon, 'ba1': bat1, 'ba2': bat2, 'ba3': bat3, 'time': timestamp_now}
     data.append(jsonrow)
+
+    print(jsonrow)
+
 
     # save it
     with open(JSON_FILE, 'w') as outfile:
@@ -487,22 +509,17 @@ while True:
     #    pub_mqtt(jsonrow)
 
 
-    # Sent to TTN
-    #payload_curl = {"dev_id":"12","p1":"1","p2":"2"}
-    payload_curl = {}
-    payload_curl["dev_id"] = 12
-    payload_curl["pi"] = 1
-    payload_curl["p2"] = 2
-    print(payload_curl)
-    send_curl(payload_curl)
+    # Sent to TTN or PycURL
 
     try:
         if LORA:
             send_data(payload)
             print('[INFO] Data sent to TTN')
         if C_URL and LORA == False:
-            # Make sure payload contain "dev_id":"sds011-11" and is a tulipe 
-            #send_curl(payload)
+            # Make sure payload contain "dev_id":"sds011-11" and is a tulipe
+            payload_curl = {}
+            payload_curl['data'] = json.dumps(jsonrow)
+            send_curl(payload_curl)
             print('[INFO] Data sent with PycURL')
         else:
             print('[WARNING] No data sent. LORA & C_URL inactive')
