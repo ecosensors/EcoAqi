@@ -13,6 +13,7 @@ import psutil
 #config
 OLED = False
 LORA = False
+C_URL = True
 Z2G = False
 GPS = False
 CO2 = True
@@ -22,6 +23,10 @@ if CO2:
 
 if LORA:
     import ttnkeys
+
+if C_URL:
+    from urllib.parse import urlencode
+    import pycurl
 
 # SDS011
 from sds011 import SDS011
@@ -200,9 +205,24 @@ def send_pi_data(data):
         #display.show()
     time.sleep(0.5)
 
+def send_curl(data):
+    if C_URL:
+        print('[INFO] Sending data with PycURL')
+        crl = pycurl.Curl()
+        crl.setopt(crl.URL, 'http://demo.eco-sensors.ch/include/save_aqi-test.php')
+        # data exemple: {"app_id":"aqi-sds012","dev_id":"sds011-12","p1":"","p2":""}
+        pf = urlencode(data)
+        crl.setopt(crl.POSTFIELDS, pf)
+        crl.perform()
+        crl.close()
+        return 1
+    else:
+        return 0
+
+# Sending with LoRa
 def send_data(data):
     if LORA:
-        print('[INFO] Sending data')
+        print('[INFO] Sending data with LoRa')
         data_pkt = bytearray(data, 'utf-8')
         try:
              lora.send_data(data_pkt, len(data_pkt),lora.frame_counter)
@@ -210,7 +230,10 @@ def send_data(data):
         except:
              print("Something went wrong")
 
-    time.sleep(0.5)
+        time.sleep(0.5)
+        return 1
+    else:
+        return 0
 
 def pub_mqtt(jsonrow):
     cmd = ['mosquitto_pub', '-h', MQTT_HOST, '-t', MQTT_TOPIC, '-s']
@@ -418,6 +441,7 @@ while True:
     timestamp_now = datetime.timestamp(tnow)
 
     # Build payload
+    #payload_curl = {}
     payload = 'a' + str(int(pmt_2_5 * 100)) + 'b' + str(int(pmt_10 * 100)) + 'c' + str(int(aqi_2_5 * 100)) + 'd' + str(int(aqi_10 * 100)) + 'e' + str(int(lat * 10000)) + 'f' + str(int(lon * 10000)) + 'g' + str(timestamp_now) + 'h' + str(int(bat1 * 100)) + 'i' + str(int(bat2 * 100)) + 'j' + str(int(bat3 * 100)) + 'k' + str(co2)
     print('[DEBUG] payload:' + payload)
     print(' ')
@@ -464,16 +488,29 @@ while True:
 
 
     # Sent to TTN
+    #payload_curl = {"dev_id":"12","p1":"1","p2":"2"}
+    payload_curl = {}
+    payload_curl["dev_id"] = 12
+    payload_curl["pi"] = 1
+    payload_curl["p2"] = 2
+    print(payload_curl)
+    send_curl(payload_curl)
+
     try:
-        send_data(payload)
         if LORA:
+            send_data(payload)
             print('[INFO] Data sent to TTN')
-        #if OLED:
-            #display.text('Data sent to TTN!',0 , 55, 1)
+        if C_URL and LORA == False:
+            # Make sure payload contain "dev_id":"sds011-11" and is a tulipe 
+            #send_curl(payload)
+            print('[INFO] Data sent with PycURL')
+        else:
+            print('[WARNING] No data sent. LORA & C_URL inactive')
+
     except NameError:
-        print ("[ERROR] Failure in sending data to TTN")
+        print ("[ERROR] Failure in sending data")
         if OLED:
-            display.text('[ERROR] Failure in sending data to TTN',0,55,1)
+            display.text('[ERROR] Failure in sending data',0,55,1)
             display.show()
         time.sleep(1)
 
