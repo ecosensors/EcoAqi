@@ -122,20 +122,10 @@ print(sensor.reportmode)
 
 def get_co2():
     print('[INFO: Getting CO2]')
-    print('[INFO] Read All')
-    print(mh_z19.read_all())
-    print('[INFO] Read')
-    co2_json = mh_z19.read()
-    print(co2_json)
-
-    try:
-        co2 = json.loads(co2_json)
-    except IOError as e:
-        co2 = []
-        print('CO2 except')
-
-    print(co2['co2'])
-    #return co2['co2']
+    #print(mh_z19.read_all())
+    co_2 = mh_z19.read()
+    print("co2: " + str(co_2['co2']))
+    return co_2['co2']
 
 def get_pm_25_10(n=3):
         print('[INFO] Waking up SDS011')
@@ -387,14 +377,19 @@ while True:
 
 
     # get Co2 (MH-Z19
+    co2=0
     if CO2:
-        get_co2()
+        co2 = get_co2()
 
     # get SDS011 measures
     pmt_2_5, pmt_10 = get_pm_25_10()
     aqi_2_5, aqi_10 = conv_aqi(pmt_2_5, pmt_10)
 
+    print(' ')
     print('---------------------------------------')
+    if CO2:
+        print(time.strftime("%Y-%m-%d (%H:%M:%S)"), end='')
+        print(f"    CO2: {co2} ppm")
     print(time.strftime("%Y-%m-%d (%H:%M:%S)"), end='')
     print(f"    PM2.5: {pmt_2_5} µg/m3    ", end='')
     print(f"PM10: {pmt_10} µg/m3")
@@ -423,20 +418,21 @@ while True:
     timestamp_now = datetime.timestamp(tnow)
 
     # Build payload
-    payload = 'a' + str(int(pmt_2_5 * 100)) + 'b' + str(int(pmt_10 * 100)) + 'c' + str(int(aqi_2_5 * 100)) + 'd' + str(int(aqi_10 * 100)) + 'e' + str(int(lat * 10000)) + 'f' + str(int(lon * 10000)) + 'g' + str(timestamp_now) + 'h' + str(int(bat1 * 100)) + 'i' + str(int(bat2 * 100)) + 'j' + str(int(bat3 * 100))
+    payload = 'a' + str(int(pmt_2_5 * 100)) + 'b' + str(int(pmt_10 * 100)) + 'c' + str(int(aqi_2_5 * 100)) + 'd' + str(int(aqi_10 * 100)) + 'e' + str(int(lat * 10000)) + 'f' + str(int(lon * 10000)) + 'g' + str(timestamp_now) + 'h' + str(int(bat1 * 100)) + 'i' + str(int(bat2 * 100)) + 'j' + str(int(bat3 * 100)) + 'k' + str(co2)
     print('[DEBUG] payload:' + payload)
     print(' ')
 
     if OLED:
         display.fill(0)
         display.show()
-        display.text('ECO-SENSORS.CH', 0, 0, 1)
-        display.text('Smart Air Quality', 0, 8, 1)
+        display.text('AIR QUALITY', 0, 0, 1)
+        display.text('PM2.5 :' + str(pmt_2_5) + 'µg/m3', 0, 8, 1)
+        display.text('PM10  :' + str(pmt_10) + 'µg/m3', 0, 18, 1)
+        display.text('AQI2.5:' + str(aqi_2_5) + 'ppm', 0, 28, 1)
+        display.text('AQI10 :' + str(aqi_10) + 'ppm', 0, 38,1)
+        if CO2:
+            display.text('CO2 :' + str(co2) + '', 0, 48, 1)
 
-        display.text('PM2.5 :' + str(pmt_2_5) + 'µg/m3', 0, 18, 1)
-        display.text('PM10  :' + str(pmt_10) + 'µg/m3', 0, 28, 1)
-        display.text('AQI2.5:' + str(aqi_2_5) + 'ppm', 0, 38, 1)
-        display.text('AQI10 :' + str(aqi_10) + 'ppm', 0, 48,1)
         display.show()
     #print(aqi_2_5)
     #print(aqi_10))
@@ -456,7 +452,7 @@ while True:
 
     # append new values
     #'aqi25': aqi_2_5, 'aqi10': aqi_10, 'lat': lat, 'lon': lon, 'bat1': bat1, 'bat2': bat2, 'bat3': bat3,
-    jsonrow = {'pm25': pmt_2_5, 'pm10': pmt_10, 'aq25': str(aqi_2_5), 'aq10': str(aqi_10), 'lat': lat, 'lon': lon, 'ba1': bat1, 'ba2': bat2, 'ba3': bat3, 'time': timestamp_now}
+    jsonrow = {'pm25': pmt_2_5, 'pm10': pmt_10, 'aq25': str(aqi_2_5), 'aq10': str(aqi_10), 'co2': str(co2) ,'lat': lat, 'lon': lon, 'ba1': bat1, 'ba2': bat2, 'ba3': bat3, 'time': timestamp_now}
     data.append(jsonrow)
 
     # save it
