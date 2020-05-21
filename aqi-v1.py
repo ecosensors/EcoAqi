@@ -15,6 +15,10 @@ OLED = False
 LORA = False
 Z2G = False
 GPS = False
+CO2 = True
+
+if CO2:
+    import mh_z19
 
 if LORA:
     import ttnkeys
@@ -116,7 +120,24 @@ print(sensor.workstate)
 print(sensor.reportmode)
 """
 
-def get_data(n=3):
+def get_co2():
+    print('[INFO: Getting CO2]')
+    print('[INFO] Read All')
+    print(mh_z19.read_all())
+    print('[INFO] Read')
+    co2_json = mh_z19.read()
+    print(co2_json)
+
+    try:
+        co2 = json.loads(co2_json)
+    except IOError as e:
+        co2 = []
+        print('CO2 except')
+
+    print(co2['co2'])
+    #return co2['co2']
+
+def get_pm_25_10(n=3):
         print('[INFO] Waking up SDS011')
 
         if OLED:
@@ -364,8 +385,13 @@ while True:
         print('Bat2:', bat2)
         print('Bat3:', bat3)
 
+
+    # get Co2 (MH-Z19
+    if CO2:
+        get_co2()
+
     # get SDS011 measures
-    pmt_2_5, pmt_10 = get_data()
+    pmt_2_5, pmt_10 = get_pm_25_10()
     aqi_2_5, aqi_10 = conv_aqi(pmt_2_5, pmt_10)
 
     print('---------------------------------------')
