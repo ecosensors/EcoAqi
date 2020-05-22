@@ -443,22 +443,22 @@ while True:
 
     # Build payload
     #payload_curl = {"dev_id":"12","p1":"1","p2":"2"}
-    #payload_curl = {}
-    #payload_curl["app_id"] = "aqi-sds011"
-    #payload_curl["dev_id"] = "sds011-12"
-    #payload_curl["a"] = int(pmt_2_5 * 100)	# p1 (pm2.5)
-    #payload_curl["b"] = int(pmt_10 * 100)	# p2 (pm10)
-    #payload_curl["c"] = int(aqi_2_5 * 100)	# a1 (aqi2.5)
-    #payload_curl["d"] = int(aqi_10 * 100)	# a2 (aqi10)
-    #payload_curl["e"] = int(lat * 10000)	# la (lat)
-    #payload_curl["f"] = int(lon * 10000)	# lo (lon)
-    #payload_curl["g"] = str(timestamp_now)  	# ti (timestamp)
-    #payload_curl["h"] = int(bat1*100)		# b1 (input 1)
-    #payload_curl["i"] = int(bat2*100)		# b2 (input 2)
-    #payload_curl["j"] = int(bat3*100)		# b3 (inout 2)
-    #payload_curl["k"] = co2			# co (CO2)
+    payload_curl1 = {}
+    payload_curl1["app_id"] = "aqi-sds011"
+    payload_curl1["dev_id"] = "sds011-12"
+    payload_curl1["p1"] = int(pmt_2_5 * 100)	# p1 (pm2.5)
+    payload_curl1["p2"] = int(pmt_10 * 100)	# p2 (pm10)
+    payload_curl1["a1"] = int(aqi_2_5 * 100)	# a1 (aqi2.5)
+    payload_curl1["a2"] = int(aqi_10 * 100)	# a2 (aqi10)
+    payload_curl1["la"] = int(lat * 10000)	# la (lat)
+    payload_curl1["lo"] = int(lon * 10000)	# lo (lon)
+    payload_curl1["ti"] = str(timestamp_now)  	# ti (timestamp)
+    payload_curl1["b1"] = int(bat1*100)		# b1 (input 1)
+    payload_curl1["b2"] = int(bat2*100)		# b2 (input 2)
+    payload_curl1["b3"] = int(bat3*100)		# b3 (inout 2)
+    payload_curl1["co"] = co2			# co (CO2)
 
-    #print(payload_curl)
+    print(payload_curl1)
 
     payload = 'a' + str(int(pmt_2_5 * 100)) + 'b' + str(int(pmt_10 * 100)) + 'c' + str(int(aqi_2_5 * 100)) + 'd' + str(int(aqi_10 * 100)) + 'e' + str(int(lat * 10000)) + 'f' + str(int(lon * 10000)) + 'g' + str(timestamp_now) + 'h' + str(int(bat1 * 100)) + 'i' + str(int(bat2 * 100)) + 'j' + str(int(bat3 * 100)) + 'k' + str(co2)
 
@@ -495,10 +495,8 @@ while True:
 
     # append new values
     #'aqi25': aqi_2_5, 'aqi10': aqi_10, 'lat': lat, 'lon': lon, 'bat1': bat1, 'bat2': bat2, 'bat3': bat3,
-    jsonrow = {'dev_id': dev_id,'pm25': pmt_2_5, 'pm10': pmt_10, 'aq25': str(aqi_2_5), 'aq10': str(aqi_10), 'co2': str(co2) ,'lat': lat, 'lon': lon, 'ba1': bat1, 'ba2': bat2, 'ba3': bat3, 'time': timestamp_now}
+    jsonrow = {'dev_id': dev_id,'p1': pmt_2_5, 'p2': pmt_10, 'a1': str(aqi_2_5), 'a2': str(aqi_10), 'co': str(co2) ,'la': lat, 'lo': lon, 'b1': bat1, 'b2': bat2, 'b3': bat3, 'ti': timestamp_now}
     data.append(jsonrow)
-
-    print(jsonrow)
 
 
     # save it
@@ -519,7 +517,7 @@ while True:
             # Make sure payload contain "dev_id":"sds011-11" and is a tulipe
             payload_curl = {}
             payload_curl['data'] = json.dumps(jsonrow)
-            send_curl(payload_curl)
+            send_curl(payload_curl1)
             print('[INFO] Data sent with PycURL')
         else:
             print('[WARNING] No data sent. LORA & C_URL inactive')
