@@ -21,9 +21,8 @@ CO2 = True
 if CO2:
     import mh_z19
 
-dev_id="sds011-12"
-
 import ttnkeys
+#dev_id = ttnkeys.dev_id
 
 if C_URL:
     from urllib.parse import urlencode
@@ -445,7 +444,7 @@ while True:
     #payload_curl = {"dev_id":"12","p1":"1","p2":"2"}
     payload_curl1 = {}
     payload_curl1["app_id"] = "aqi-sds011"
-    payload_curl1["dev_id"] = "sds011-12"
+    payload_curl1["dev_id"] = ttnkeys.dev_id
     payload_curl1["p1"] = int(pmt_2_5 * 100)	# p1 (pm2.5)
     payload_curl1["p2"] = int(pmt_10 * 100)	# p2 (pm10)
     payload_curl1["a1"] = int(aqi_2_5 * 100)	# a1 (aqi2.5)
@@ -495,7 +494,7 @@ while True:
 
     # append new values
     #'aqi25': aqi_2_5, 'aqi10': aqi_10, 'lat': lat, 'lon': lon, 'bat1': bat1, 'bat2': bat2, 'bat3': bat3,
-    jsonrow = {'dev_id': dev_id,'p1': pmt_2_5, 'p2': pmt_10, 'a1': str(aqi_2_5), 'a2': str(aqi_10), 'co': str(co2) ,'la': lat, 'lo': lon, 'b1': bat1, 'b2': bat2, 'b3': bat3, 'ti': timestamp_now}
+    jsonrow = {'dev_id': ttnkeys.dev_id,'p1': pmt_2_5, 'p2': pmt_10, 'a1': str(aqi_2_5), 'a2': str(aqi_10), 'co': str(co2) ,'la': lat, 'lo': lon, 'b1': bat1, 'b2': bat2, 'b3': bat3, 'ti': timestamp_now}
     data.append(jsonrow)
 
 
