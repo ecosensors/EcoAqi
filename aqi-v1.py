@@ -25,8 +25,8 @@ import ttnkeys
 #dev_id = ttnkeys.dev_id
 
 if C_URL:
-    from urllib.parse import urlencode
-    import pycurl
+    import  pycurl
+    from io import StringIO
 
 # SDS011
 from sds011 import SDS011
@@ -208,13 +208,42 @@ def send_pi_data(data):
 def send_curl(data):
     if C_URL:
         print('[INFO] Sending data with PycURL')
-        crl = pycurl.Curl()
-        crl.setopt(crl.URL, 'http://demo.eco-sensors.ch/include/save_aqi-test.php')
-        # data exemple: {"app_id":"aqi-sds012","dev_id":"sds011-12","p1":"","p2":""}
-        pf = urlencode(data)
-        crl.setopt(crl.POSTFIELDS, pf)
-        crl.perform()
-        crl.close()
+        c = pycurl.Curl()
+        c.setopt(c.URL, 'http://demo.eco-sensors.ch/include/save_aqi_n.php')
+        c.setopt(c.HTTPHEADER, ['Accept: application/json','Content-Type: application/json'])
+        c.setopt(c.POST, 1)
+
+        # If you want to set a total timeout, say, 3 seconds
+        c.setopt(c.TIMEOUT_MS, 3000)
+
+        ## depending on whether you want to print details on stdout, uncomment either
+        # curl.setopt(c.VERBOSE, 1) # to print entire request flow
+        ## or
+        # curl.setopt(p.WRITEFUNCTION, lambda x: None) # to keep stdout clean
+
+        # preparing body the way pycurl.READDATA wants it
+        # NOTE: you may reuse curl object setup at this point
+        #  if sending POST repeatedly to the url. It will reuse
+        #  the connection.
+        #body_as_dict = {"dev_id": "12", "path": "def", "target": "ghi"}
+        body_as_dict = jsonrow
+        body_as_json_string = json.dumps(body_as_dict) # dict to json
+        body_as_file_object = StringIO(body_as_json_string)
+
+        # prepare and send. See also: pycurl.READFUNCTION to pass function instead
+        c.setopt(c.READDATA, body_as_file_object) 
+        c.setopt(c.POSTFIELDSIZE, len(body_as_json_string))
+        c.perform()
+
+        # you may want to check HTTP response code, e.g.
+        status_code = c.getinfo(pycurl.RESPONSE_CODE)
+        if status_code != 200:
+            print("Server returned HTTP status code {}".format(status_code))
+            #print('Device error: {}'.format(e))
+
+        # don't forget to release connection when finished
+        c.close()
+
         return 1
     else:
         return 0
@@ -451,7 +480,7 @@ while True:
     payload_curl1["a2"] = int(aqi_10 * 100)	# a2 (aqi10)
     payload_curl1["la"] = int(lat * 10000)	# la (lat)
     payload_curl1["lo"] = int(lon * 10000)	# lo (lon)
-    payload_curl1["ti"] = str(timestamp_now)  	# ti (timestamp)
+    payload_curl1["da"] = str(timestamp_now)  	# da (timestamp)
     payload_curl1["b1"] = int(bat1*100)		# b1 (input 1)
     payload_curl1["b2"] = int(bat2*100)		# b2 (input 2)
     payload_curl1["b3"] = int(bat3*100)		# b3 (inout 2)
@@ -494,7 +523,7 @@ while True:
 
     # append new values
     #'aqi25': aqi_2_5, 'aqi10': aqi_10, 'lat': lat, 'lon': lon, 'bat1': bat1, 'bat2': bat2, 'bat3': bat3,
-    jsonrow = {'dev_id': ttnkeys.dev_id,'p1': pmt_2_5, 'p2': pmt_10, 'a1': str(aqi_2_5), 'a2': str(aqi_10), 'co': str(co2) ,'la': lat, 'lo': lon, 'b1': bat1, 'b2': bat2, 'b3': bat3, 'ti': timestamp_now}
+    jsonrow = {'dev_id': ttnkeys.dev_id,'p1': pmt_2_5, 'p2': pmt_10, 'a1': str(aqi_2_5), 'a2': str(aqi_10), 'co': str(co2) ,'la': lat, 'lo': lon, 'b1': bat1, 'b2': bat2, 'b3': bat3, 'da': timestamp_now}
     data.append(jsonrow)
 
 
@@ -515,8 +544,10 @@ while True:
         if C_URL and LORA == False:
             # Make sure payload contain "dev_id":"sds011-11" and is a tulipe
             payload_curl = {}
-            payload_curl['data'] = json.dumps(jsonrow)
-            send_curl(payload_curl1)
+            #payload_curl['data'] = str(jsonrow)
+
+            t = '{"dev_id":"112","p1":"2"}'
+            send_curl(jsonrow)
             print('[INFO] Data sent with PycURL')
         else:
             print('[WARNING] No data sent. LORA & C_URL inactive')
