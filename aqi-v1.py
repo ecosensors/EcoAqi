@@ -215,7 +215,7 @@ def send_curl(data):
 
         # If you want to set a total timeout, say, 3 seconds
         c.setopt(c.TIMEOUT_MS, 3000)
-
+        print("!!! CHECK HERE !!!")
         ## depending on whether you want to print details on stdout, uncomment either
         # curl.setopt(c.VERBOSE, 1) # to print entire request flow
         ## or
@@ -226,7 +226,7 @@ def send_curl(data):
         #  if sending POST repeatedly to the url. It will reuse
         #  the connection.
         #body_as_dict = {"dev_id": "12", "path": "def", "target": "ghi"}
-        body_as_dict = jsonrow
+        body_as_dict = data
         body_as_json_string = json.dumps(body_as_dict) # dict to json
         body_as_file_object = StringIO(body_as_json_string)
 
@@ -469,25 +469,6 @@ while True:
     tnow = datetime.now()
     timestamp_now = datetime.timestamp(tnow)
 
-    # Build payload
-    #payload_curl = {"dev_id":"12","p1":"1","p2":"2"}
-    payload_curl1 = {}
-    payload_curl1["app_id"] = "aqi-sds011"
-    payload_curl1["dev_id"] = ttnkeys.dev_id
-    payload_curl1["p1"] = int(pmt_2_5 * 100)	# p1 (pm2.5)
-    payload_curl1["p2"] = int(pmt_10 * 100)	# p2 (pm10)
-    payload_curl1["a1"] = int(aqi_2_5 * 100)	# a1 (aqi2.5)
-    payload_curl1["a2"] = int(aqi_10 * 100)	# a2 (aqi10)
-    payload_curl1["la"] = int(lat * 10000)	# la (lat)
-    payload_curl1["lo"] = int(lon * 10000)	# lo (lon)
-    payload_curl1["da"] = str(timestamp_now)  	# da (timestamp)
-    payload_curl1["b1"] = int(bat1*100)		# b1 (input 1)
-    payload_curl1["b2"] = int(bat2*100)		# b2 (input 2)
-    payload_curl1["b3"] = int(bat3*100)		# b3 (inout 2)
-    payload_curl1["co"] = co2			# co (CO2)
-
-    print(payload_curl1)
-
     payload = 'a' + str(int(pmt_2_5 * 100)) + 'b' + str(int(pmt_10 * 100)) + 'c' + str(int(aqi_2_5 * 100)) + 'd' + str(int(aqi_10 * 100)) + 'e' + str(int(lat * 10000)) + 'f' + str(int(lon * 10000)) + 'g' + str(timestamp_now) + 'h' + str(int(bat1 * 100)) + 'i' + str(int(bat2 * 100)) + 'j' + str(int(bat3 * 100)) + 'k' + str(co2)
 
     print('[DEBUG] payload:' + payload)
@@ -521,12 +502,35 @@ while True:
     if len(data) > 100:
         data.pop(0)
 
+    # Build payload
+    #payload_curl = {"dev_id":"12","p1":"1","p2":"2"}
+    #payload_curl1 = {}
+    #payload_curl1["app_id"] = "aqi-sds011"
+    #payload_curl1["dev_id"] = ttnkeys.dev_id
+    #payload_curl1["p1"] = int(pmt_2_5 * 100)   # p1 (pm2.5)
+    #payload_curl1["p2"] = int(pmt_10 * 100)    # p2 (pm10)
+    #payload_curl1["a1"] = int(aqi_2_5 * 100)   # a1 (aqi2.5)
+    #payload_curl1["a2"] = int(aqi_10 * 100)    # a2 (aqi10)
+    #payload_curl1["la"] = int(lat * 10000)     # la (lat)
+    #payload_curl1["lo"] = int(lon * 10000)     # lo (lon)
+    #payload_curl1["da"] = str(timestamp_now)   # da (timestamp)
+    #payload_curl1["b1"] = int(bat1*100)                # b1 (input 1)
+    #payload_curl1["b2"] = int(bat2*100)                # b2 (input 2)
+    #payload_curl1["b3"] = int(bat3*100)                # b3 (inout 2)
+    #payload_curl1["co"] = co2*100              # co (CO2)
+
+    #print(payload_curl1)
+
+
     # append new values
-    #'aqi25': aqi_2_5, 'aqi10': aqi_10, 'lat': lat, 'lon': lon, 'bat1': bat1, 'bat2': bat2, 'bat3': bat3,
-    jsonrow = {'dev_id': ttnkeys.dev_id,'p1': pmt_2_5, 'p2': pmt_10, 'a1': str(aqi_2_5), 'a2': str(aqi_10), 'co': str(co2) ,'la': lat, 'lo': lon, 'b1': bat1, 'b2': bat2, 'b3': bat3, 'da': timestamp_now}
+    # "metadata":"time" must not be "metadata":"ti" as we send it to LoRa. jsonrow is used while the data is sent over WiFi (and not LoRa) amd ,ust be 
+    #time instead of ti to match to the format receive from TTN in the PHP file 
+    jsoncurl = {'dev_id': ttnkeys.dev_id,'payload_fields':{'p1': pmt_2_5*100, 'p2': pmt_10*100, 'a1': str(aqi_2_5*100), 'a2': str(aqi_10*100), 'co': str(co2*100) ,'la': lat*10000, 'lo': lon*10000, 'b1': bat1*100, 'b2': bat2*100, 'b3': bat3*100},'metadata':{ 'time': timestamp_now}}
+    jsonrow = {'dev_id': ttnkeys.dev_id,'payload_fields':{'p1': pmt_2_5, 'p2': pmt_10, 'a1': str(aqi_2_5), 'a2': str(aqi_10), 'co': str(co2) ,'la': lat, 'lo': lon, 'b1': bat1, 'b2': bat2, 'b3': bat3},'metadata':{ 'time': timestamp_now}}
     data.append(jsonrow)
 
-
+    print(jsonrow)
+    print(jsoncurl)
     # save it
     with open(JSON_FILE, 'w') as outfile:
         json.dump(data, outfile)
@@ -542,12 +546,8 @@ while True:
             send_data(payload)
             print('[INFO] Data sent to TTN')
         if C_URL and LORA == False:
-            # Make sure payload contain "dev_id":"sds011-11" and is a tulipe
-            payload_curl = {}
-            #payload_curl['data'] = str(jsonrow)
-
-            t = '{"dev_id":"112","p1":"2"}'
-            send_curl(jsonrow)
+            #t = '{"dev_id":"112","p1":"2"}'
+            send_curl(jsoncurl)
             print('[INFO] Data sent with PycURL')
         else:
             print('[WARNING] No data sent. LORA & C_URL inactive')
