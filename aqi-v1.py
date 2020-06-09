@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+
+"""
+That script will sent particular matter (PM2.5 and PM10) and CO2 over LoRaWAN or WiFi
+Meaures are log into a json file.
+
+To schedule the script, use sudo crontab -e. sudo is mendatory
+expl: #*/2 * * * * cd /opt/ecoaqi/ && ./aqi-v1.py >/var/log/aqi-v1.log 2>&1
+"""
+
 import sys
 import subprocess
 import time, json
@@ -236,6 +245,7 @@ def send_curl(data):
     if C_URL:
         print('[INFO] Sending data with PycURL')
         save_log("INFO","Sending data with PycURL")
+        # https://stackoverflow.com/questions/31826814/curl-post-request-into-pycurl-code/31827961#31827961
         try:
             c = pycurl.Curl()
             c.setopt(c.URL, 'http://demo.eco-sensors.ch/include/save_aqi_n.php')
@@ -243,11 +253,11 @@ def send_curl(data):
             c.setopt(c.POST, 1)
 
             # If you want to set a total timeout, say, 3 seconds
-            c.setopt(c.TIMEOUT_MS, 3000)
+            #c.setopt(c.TIMEOUT_MS, 3000)
             ## depending on whether you want to print details on stdout, uncomment either
-            # curl.setopt(c.VERBOSE, 1) # to print entire request flow
+            #c.setopt(c.VERBOSE, 1) # to print entire request flow
             ## or
-            # curl.setopt(p.WRITEFUNCTION, lambda x: None) # to keep stdout clean
+            c.setopt(c.WRITEFUNCTION, lambda x: None) # to keep stdout clean
 
             # preparing body the way pycurl.READDATA wants it
             # NOTE: you may reuse curl object setup at this point
@@ -256,8 +266,9 @@ def send_curl(data):
             #body_as_dict = {"dev_id": "12", "path": "def", "target": "ghi"}
             body_as_dict = data
             body_as_json_string = json.dumps(body_as_dict) # dict to json
+            #print(body_as_json_string)
             body_as_file_object = StringIO(body_as_json_string)
-
+            #print(body_as_file_object)
             # prepare and send. See also: pycurl.READFUNCTION to pass function instead
             c.setopt(c.READDATA, body_as_file_object) 
             c.setopt(c.POSTFIELDSIZE, len(body_as_json_string))
@@ -585,8 +596,7 @@ if True:
     if LORA:
         send_data(payload)
         print('[INFO] Data sent to TTN')
-
-    if C_URL and LORA == False:
+    elif C_URL:
         r = send_curl(jsoncurl)
         if r ==1:
             print('[INFO] Data sent with PycURL')
