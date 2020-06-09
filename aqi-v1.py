@@ -1,4 +1,5 @@
-#get!/usr/bin/env python
+#!/usr/bin/env python3
+import sys
 import subprocess
 import time, json
 import smbus
@@ -11,12 +12,16 @@ import psutil
 #import subprocess
 
 #config
-OLED = False
+LEDs = True
+OLED = True
 LORA = False
-C_URL = True
+if(LORA):
+    C_URL = False
+else:
+    C_URL = True
 Z2G = False
 GPS = False
-CO2 = True
+CO2 = False
 
 if CO2:
     import mh_z19
@@ -65,10 +70,24 @@ if OLED:
     display.poweroff()
 
 
+# LEDs
+d18Output = DigitalInOut(board.D18)
+d18Output.direction = Direction.OUTPUT
+d18Output.value = False
+
+d19Output = DigitalInOut(board.D19)
+d19Output.direction = Direction.OUTPUT
+d19Output.value = False
+
+d20Output = DigitalInOut(board.D20)
+d20Output.direction = Direction.OUTPUT
+d20Output.value = False
+
+
 # GPS
 import pynmea2, serial
 if GPS:
-    gps_power = DigitalInOut(board.D12)
+    gps_power = DigitalInOut(board.D13) # Check pin
     gps_power.direction = Direction.OUTPUT
     gps_power.value = False
 lat=0
@@ -77,6 +96,8 @@ lon=0
 # JSON
 JSON_FILE = '/var/www/html/aqi.json'
 
+# LOG
+LOG_FILE = '/opt/ecoaqi/log/log.txt'
 
 # MQTT
 MQTT_HOST = ''
@@ -180,12 +201,18 @@ def conv_aqi(pmt_2_5, pmt_10):
 
 """
 # NOT USED
-def save_log():
+def save_excel():
     with open("/YOUR PATH/air_quality.csv", "a") as log:
         dt = datetime.now()
         log.write("{},{},{},{},{}\n".format(dt, pmt_2_5, aqi_2_5, pmt_10, aqi_10))
     log.close()
 """
+
+def save_log(type,txt):
+    with open("/opt/ecoaqi/log/log.txt", "a+") as log:
+        dt = datetime.now()
+        log.write("{},{},{}\n".format(dt, type, txt))
+    log.close()
 
 # NOT USED
 def send_pi_data(data):
@@ -208,43 +235,50 @@ def send_pi_data(data):
 def send_curl(data):
     if C_URL:
         print('[INFO] Sending data with PycURL')
-        c = pycurl.Curl()
-        c.setopt(c.URL, 'http://demo.eco-sensors.ch/include/save_aqi_n.php')
-        c.setopt(c.HTTPHEADER, ['Accept: application/json','Content-Type: application/json'])
-        c.setopt(c.POST, 1)
+        save_log("INFO","Sending data with PycURL")
+        try:
+            c = pycurl.Curl()
+            c.setopt(c.URL, 'http://demo.eco-sensors.ch/include/save_aqi_n.php')
+            c.setopt(c.HTTPHEADER, ['Accept: application/json','Content-Type: application/json'])
+            c.setopt(c.POST, 1)
 
-        # If you want to set a total timeout, say, 3 seconds
-        c.setopt(c.TIMEOUT_MS, 3000)
-        print("!!! CHECK HERE !!!")
-        ## depending on whether you want to print details on stdout, uncomment either
-        # curl.setopt(c.VERBOSE, 1) # to print entire request flow
-        ## or
-        # curl.setopt(p.WRITEFUNCTION, lambda x: None) # to keep stdout clean
+            # If you want to set a total timeout, say, 3 seconds
+            c.setopt(c.TIMEOUT_MS, 3000)
+            ## depending on whether you want to print details on stdout, uncomment either
+            # curl.setopt(c.VERBOSE, 1) # to print entire request flow
+            ## or
+            # curl.setopt(p.WRITEFUNCTION, lambda x: None) # to keep stdout clean
 
-        # preparing body the way pycurl.READDATA wants it
-        # NOTE: you may reuse curl object setup at this point
-        #  if sending POST repeatedly to the url. It will reuse
-        #  the connection.
-        #body_as_dict = {"dev_id": "12", "path": "def", "target": "ghi"}
-        body_as_dict = data
-        body_as_json_string = json.dumps(body_as_dict) # dict to json
-        body_as_file_object = StringIO(body_as_json_string)
+            # preparing body the way pycurl.READDATA wants it
+            # NOTE: you may reuse curl object setup at this point
+            #  if sending POST repeatedly to the url. It will reuse
+            #  the connection.
+            #body_as_dict = {"dev_id": "12", "path": "def", "target": "ghi"}
+            body_as_dict = data
+            body_as_json_string = json.dumps(body_as_dict) # dict to json
+            body_as_file_object = StringIO(body_as_json_string)
 
-        # prepare and send. See also: pycurl.READFUNCTION to pass function instead
-        c.setopt(c.READDATA, body_as_file_object) 
-        c.setopt(c.POSTFIELDSIZE, len(body_as_json_string))
-        c.perform()
+            # prepare and send. See also: pycurl.READFUNCTION to pass function instead
+            c.setopt(c.READDATA, body_as_file_object) 
+            c.setopt(c.POSTFIELDSIZE, len(body_as_json_string))
+            c.perform()
 
-        # you may want to check HTTP response code, e.g.
-        status_code = c.getinfo(pycurl.RESPONSE_CODE)
-        if status_code != 200:
-            print("Server returned HTTP status code {}".format(status_code))
-            #print('Device error: {}'.format(e))
+            # you may want to check HTTP response code, e.g.
+            status_code = c.getinfo(pycurl.RESPONSE_CODE)
+            if status_code != 200:
+                print("Server returned HTTP status code {}".format(status_code))
+                save_log("ERROR","Server returned HTTP status code {}".format(status_cocde))
+                #print('Device error: {}'.format(e))
 
-        # don't forget to release connection when finished
-        c.close()
+            # don't forget to release connection when finished
+            c.close()
+            return 1
 
-        return 1
+        except Exception as e:
+            c.close()
+            save_log("ERROR","c.setopt error %s" % e)
+            return -1
+
     else:
         return 0
 
@@ -392,7 +426,7 @@ tPort = 1883
 tTLS = None
 """
 
-while True:
+if True:
     if OLED:
         display.poweron()
         display.fill(0)
@@ -408,6 +442,10 @@ while True:
     CPU = float(CPU)
     print('[INFO] CPU load %' + str(CPU))
     """
+
+    d18Output.value = 1
+    d19Output.value = 1
+    d20Output.value = 1
 
     # GPS
     if GPS:
@@ -464,6 +502,8 @@ while True:
     # h => bat1
     # i => bat2
     # j => bat3
+
+    d18Output.value = 0
 
     # get date and time
     tnow = datetime.now()
@@ -538,26 +578,32 @@ while True:
     #if MQTT_HOST != '':
     #    pub_mqtt(jsonrow)
 
+    d19Output.value = 0
 
     # Sent to TTN or PycURL
 
-    try:
-        if LORA:
-            send_data(payload)
-            print('[INFO] Data sent to TTN')
-        if C_URL and LORA == False:
-            #t = '{"dev_id":"112","p1":"2"}'
-            send_curl(jsoncurl)
-            print('[INFO] Data sent with PycURL')
-        else:
-            print('[WARNING] No data sent. LORA & C_URL inactive')
+    if LORA:
+        send_data(payload)
+        print('[INFO] Data sent to TTN')
 
-    except NameError:
-        print ("[ERROR] Failure in sending data")
-        if OLED:
-            display.text('[ERROR] Failure in sending data',0,55,1)
-            display.show()
-        time.sleep(1)
+    if C_URL and LORA == False:
+        r = send_curl(jsoncurl)
+        if r ==1:
+            print('[INFO] Data sent with PycURL')
+        elif r == 0:
+            print ('[INFO] CURL inactive')
+        elif r == -1:
+            print('[ERROR] c.setoption ERROR. Check PycURL')
+        else:
+            print('[WARMING] send_curl() returned %s. That s not normal' % r)
+    else:
+        print('[WARNING] No data sent. LORA & C_URL inactive')
+
+        #print ("[ERROR] Failure in sending data")
+        #if OLED:
+        #    display.text('[ERROR] Failure in sending data',0,55,1)
+        #    display.show()
+        #time.sleep(1)
 
     #sl=3600
     #sl=1800
@@ -565,9 +611,14 @@ while True:
     print('[INFO] Sleep for ' + str(sl)  + ' sec')
     print(' ')
 
+    d20Output.value = 0
     time.sleep(10)
 
     # Turn off the OLD LCD
     if OLED:
         display.poweroff()
-    time.sleep(sl-10)
+
+sys.exit('Exit the script and wait for the next cron')
+
+#    time.sleep(sl-10)
+
