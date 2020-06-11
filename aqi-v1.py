@@ -21,9 +21,11 @@ import psutil
 #import subprocess
 
 #config
+stabilisation_delay = 10 #delay to have the sds011 stabilized
+pm_n_measures = 5 # Number of measures for sds011 sebsors
 LEDs = True
 OLED = True
-LORA = False
+LORA = True
 if(LORA):
     C_URL = False
 else:
@@ -162,7 +164,7 @@ def get_co2():
     print("co2: " + str(co_2['co2']))
     return co_2['co2']
 
-def get_pm_25_10(n=3):
+def get_pm_25_10(n):
         print('[INFO] Waking up SDS011')
 
         if OLED:
@@ -171,14 +173,14 @@ def get_pm_25_10(n=3):
         sensor.sleep(sleep=False)
         pmt_2_5 = 0
         pmt_10 = 0
-        stab = 3
+        #stabilisation_delay = 3
 
         if OLED:
-            display.text('Wait ' + str(stab) + 's to stabilize', 0, 28, 1)
+            display.text('Wait ' + str(stabilisation_delay) + 's to stabilize', 0, 28, 1)
             display.show()
 
-        print('[INFO] Wait ' + str(stab) + 's to stabilize ...')
-        time.sleep(stab)
+        print('[INFO] Wait ' + str(stabilisation_delay) + 's to stabilize ...')
+        time.sleep(stabilisation_delay)
         print('[INFO] Measuring ' + str(n) + ' times')
 
         if OLED:
@@ -483,7 +485,7 @@ if True:
         co2 = get_co2()
 
     # get SDS011 measures
-    pmt_2_5, pmt_10 = get_pm_25_10()
+    pmt_2_5, pmt_10 = get_pm_25_10(pm_n_measures)
     aqi_2_5, aqi_10 = conv_aqi(pmt_2_5, pmt_10)
 
     print(' ')
