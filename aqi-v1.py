@@ -250,7 +250,7 @@ def send_curl(data):
         # https://stackoverflow.com/questions/31826814/curl-post-request-into-pycurl-code/31827961#31827961
         try:
             c = pycurl.Curl()
-            c.setopt(c.URL, 'http://demo.eco-sensors.ch/include/save_aqi_n.php')
+            c.setopt(c.URL, 'http://demo.toto.ch/include/save_aqi_n.php')
             c.setopt(c.HTTPHEADER, ['Accept: application/json','Content-Type: application/json'])
             c.setopt(c.POST, 1)
 
