@@ -4,6 +4,9 @@
 That script will sent particular matter (PM2.5 and PM10) and CO2 over LoRaWAN or WiFi
 Meaures are log into a json file.
 
+Mote: MQTT part has never bee tested yet
+
+Important:
 To schedule the script, use sudo crontab -e. sudo is mendatory
 expl: #*/2 * * * * cd /opt/ecoaqi/ && ./aqi-v1.py >/var/log/aqi-v1.log 2>&1
 """
@@ -250,7 +253,7 @@ def send_curl(data):
         # https://stackoverflow.com/questions/31826814/curl-post-request-into-pycurl-code/31827961#31827961
         try:
             c = pycurl.Curl()
-            c.setopt(c.URL, 'http://demo.toto.ch/include/save_aqi_n.php')
+            c.setopt(c.URL, 'http://demo.website.com/path/save_aqi_n.php')
             c.setopt(c.HTTPHEADER, ['Accept: application/json','Content-Type: application/json'])
             c.setopt(c.POST, 1)
 
