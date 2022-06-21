@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 """
+EcoAqi © 2020 by Pierre Amey is licensed under CC BY-NC-SA 4.0
+Library is distributed  WITHOUT WARRANTY
+
 That script will sent particular matter (PM2.5 and PM10) and CO2 over LoRaWAN or WiFi
 Meaures are log into a json file.
 
