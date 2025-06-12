@@ -623,6 +623,7 @@ if True:
         #    display.show()
         #time.sleep(1)
 
+    # sl value is just to print the schedule you define in your cron tab. Adapt it following your cron setting
     #sl=3600
     #sl=1800
     sl=120
@@ -637,6 +638,3 @@ if True:
         display.poweroff()
 
 sys.exit('Exit the script and wait for the next cron')
-
-#    time.sleep(sl-10)
-
